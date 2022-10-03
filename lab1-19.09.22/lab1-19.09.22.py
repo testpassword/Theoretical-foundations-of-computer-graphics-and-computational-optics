@@ -45,7 +45,8 @@ for l in [point_light, rectangle_light]:
 	l.color = SpecLightColor(RGBLightColor(*np.random.rand(3)))
 	l.total_flux = random.randint(500, 1000)  #less than 500lm is dim
 box = shape_lib.GetItem('Box')
-sphere = Sphere(radius = 100)
+sphere = shape_lib.GetItem('Sphere')
+sphere.radius = 100
 #create a large Observer to catch everything
 obs.res = 128, 128
 obs.org = -1000, -1000, 700
