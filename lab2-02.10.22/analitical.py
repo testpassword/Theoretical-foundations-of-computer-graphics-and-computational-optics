@@ -14,7 +14,7 @@ def vec(point: Iterable[Number], light: Iterable[Number]) -> np.array:
 
 # Numerical value of cos between vector(between point and light source) and normal vector.
 def cos(k: Iterable[Number], normal_vec: np.array) -> float:
-    return (k[0] * normal_vec[0] + k[1] * normal_vec[1] + k[2] * normal_vec[2]) / (hypot(*k) * hypot(*normal_vec))
+    return abs((k[0] * normal_vec[0] + k[1] * normal_vec[1] + k[2] * normal_vec[2]) / (hypot(*k) * hypot(*normal_vec)))
 
 # Find illumination in point.
 def E(W: Number, R: Number, cos: Number) -> float: 
@@ -25,7 +25,7 @@ def ΔE(lumicept_val, analytical_val) -> float:
     return abs((lumicept_val - analytical_val) / analytical_val * 100)
 
 W = 100 # light flow power
-vecN = np.array([0, -1, 0]) # normal vector of plane
+vecN = np.array([0, 1, 0]) # normal vector of plane
 light = [1, -2, 1.5] # light source coordinates
 p1 = [0, 0, 0] # point1
 p2 = [-1, 0, 1] # point2
