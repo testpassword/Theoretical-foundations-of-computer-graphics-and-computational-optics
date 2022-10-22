@@ -27,12 +27,13 @@ rec_n.Rotate(90, 0, 0)
 point_light = light_lib.GetItem('Point')
 point_light.radiometric = True
 point_light.total_flux = 100
-point_light.color = SpecLightColor('spectral_pink.spd')
+point_light.color = SpecLightColor([1]*41, range(380, 790, 10))
 point_light_n = LightNode(point_light)
 point_light_n.Translate(1000, -2000, 1500)
 point_light_n.Rotate(90, 0, 0)
 
-obs_nodes = [build_observer_node(*it) for it in [(0, -1000, 0, 30), (0, -1000, 0, 5), (0, -1000, -1000, 30), (0, -1000, -1000, 5)]]
+#(0, -1000, 0, 5), (0, -1000, -1000, 30), (0, -1000, -1000, 5)
+obs_nodes = [build_observer_node(*it) for it in [(0, -1000, 0, 30)]]
 cm = ColorModel([it * 10 + 370 for it in range(1, 42)])
 cm.SetSpectral()
 scene = Scene()
