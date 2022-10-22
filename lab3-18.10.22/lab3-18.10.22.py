@@ -3,7 +3,7 @@ light_lib = GetLibrary(Light)
 surf_lib = GetLibrary(SurfAttrs)
 
 
-def build_observer_node(x: int = 0, y: int = 0, z: int = 0, angle: int = 30) -> Observer:
+def build_observer_node(x: int = 0, y: int = 0, z: int = 0, angle: int = 90) -> Observer:
 	obs = PlaneObserver()
 	obs.res = 21, 31
 	obs.phenom = ObserverData.LUM
@@ -32,8 +32,15 @@ point_light_n = LightNode(point_light)
 point_light_n.Translate(1000, -2000, 1500)
 point_light_n.Rotate(90, 0, 0)
 
-#(0, -1000, 0, 5), (0, -1000, -1000, 30), (0, -1000, -1000, 5)
-obs_nodes = [build_observer_node(*it) for it in [(0, -1000, 0, 30)]]
+obs_nodes = [
+	build_observer_node(*it) for it in [
+		(0, 0, 1000, 30), #(0, -1, 0) 30deg
+		(0, 0, 1000, 5), #(0, -1, 0) 5deg
+		(0, -1000, 1000, 30), #(0, -1, -1) 30deg
+		(0, -1000, 1000, 5) #(0, -1, -1) 5deg
+	]
+]
+
 cm = ColorModel([it * 10 + 370 for it in range(1, 42)])
 cm.SetSpectral()
 scene = Scene()
@@ -46,4 +53,4 @@ imaps.req_acc = 0.01
 kernel = GetKernel()
 for obs_n in obs_nodes:
 	imaps.SetObserverAsAccSource(obs_n)
-	#kernel.CalculateIMaps()
+	kernel.CalculateIMaps()
