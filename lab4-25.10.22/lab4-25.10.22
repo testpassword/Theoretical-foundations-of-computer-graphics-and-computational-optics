@@ -1,0 +1,35 @@
+def get_name_and_ext(filepath: str) -> tuple:
+	tokens = filepath.rsplit('.', 1)
+	return tokens[0], tokens[1]
+
+
+def nit_to_txt(filepath: str):
+	PostProcessor(filepath).SaveToText(
+		get_name_and_ext(filepath)[0] + '.txt', 
+		format=PPOutputFormat.RGB, 
+		overwrite=OverwriteMode.OVERWRITE
+	)
+
+
+def txt_to_nit(filepath: str):
+	w = h = 0
+	with open(filepath, 'r') as file:
+		for l in file:
+			def extract_resolution(direction: str) -> int:
+				return int(l.replace(direction, '').replace('pix', '').strip())
+			if 'Horizontal' in l:
+				w = extract_resolution('Horizontal')
+			if 'Vertical' in l:
+				h = extract_resolution('Vertical')
+			if w and h:
+				r, g, b = [[[None] * w] * h] * 3
+			#if 'red' in l and 'index' in l:
+	PostProcessor(PPDataUnits.LUMINANCE, [], r, g, b).SaveToHDR(
+		get_name_and_ext(filepath)[0] + '-OUT.nit',
+		overwrite=OverwriteMode.OVERWRITE
+	)
+			
+
+
+#nit_to_txt('illuminance.nit')
+txt_to_nit('illuminance.txt')
