@@ -6,7 +6,7 @@ def get_name_and_ext(filepath: str) -> tuple:
 	return tokens[0], tokens[1]
 
 
-def create_3d_arr(x, y, z) -> list:
+def create_3d_arr(x: int, y: int, z: int) -> list:
 	arr = [None] * x
 	for i in range(x):
 		arr[i] = [None] * y
