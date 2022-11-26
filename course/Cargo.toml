@@ -1,0 +1,7 @@
+[package]
+name = "course"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.0.26", features = ["derive"] }
