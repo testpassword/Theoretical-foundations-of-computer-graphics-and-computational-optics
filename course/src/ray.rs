@@ -2,11 +2,12 @@ use std::collections::HashMap;
 use crate::vec3::Vec3;
 use crate::light::Light;
 
+#[derive(Debug)]
 pub struct Ray {
     pub origin: Vec3,
     pub direction: Vec3,
     pub bright_coefs: HashMap<i32, f32>,
-    pub L: HashMap<i32, f32>
+    pub L: HashMap<i32, f32> // L - яркость
 }
 
 impl Ray {

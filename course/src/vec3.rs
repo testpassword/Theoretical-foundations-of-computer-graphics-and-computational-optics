@@ -103,3 +103,13 @@ impl Default for Vec3 {
         }
     }
 }
+
+impl From<(f32, f32, f32)> for Vec3 {
+    fn from(t: (f32, f32, f32)) -> Self {
+        Vec3 {
+            x: t.0,
+            y: t.1,
+            z: t.2
+        }
+    }
+}
