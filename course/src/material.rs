@@ -10,11 +10,17 @@ pub struct Material {
 }
 
 lazy_static! {
-    pub static ref MATERIAL_LIBRARY: Vec<Material> = vec![
+    pub static ref MATERIAL_LIBRARY: [Material; 5] = [
+        ([0.343, 0.747, 0.740, 0.737], 0.0, 20.0),
+        ([0.092, 0.285, 0.160, 0.159], 0.0, 20.0),
+        ([0.040, 0.058, 0.287, 0.642], 0.0, 20.0),
+        ([0.343, 0.747, 0.740, 0.737], 0.5, 20.0),
+        ([0.343, 0.747, 0.740, 0.737], 0.5, 20.0)
+    ].map(|(dr, specular_reflection, transparency)|
         Material {
-            specular_reflection: 0.0,
-            transparency: 0.0,
-            diffuse_reflection: HashMap::new()
+            diffuse_reflection: HashMap::from([(400, dr[0]), (500, dr[1]), (600, dr[2]), (700, dr[3])]),
+            specular_reflection,
+            transparency
         }
-    ];
+    );
 }

@@ -1,3 +1,4 @@
+use std::char::MAX;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -13,28 +14,32 @@ pub struct Scene<'s> {
     pub geometry: Vec<Polygon<'s>>
 }
 
-// add there LightSource and static method with file reading
+#[derive(PartialEq)]
+enum LoadState {
+    PartsReading,
+    TrianglesReading,
+    IdReading,
+    VerticesReading
+}
+
 impl Scene<'_> {
-    pub fn load(path: String, light: Light) -> Scene<'static> {
+    pub fn new(path: String, light: Light) -> Scene<'static> {
+        let mut state = LoadState::PartsReading;
         let mut vertices: Vec<Vec3> = vec![];
-        let mut geometry: Vec<Polygon> = vec![];;
-        let mut object_ids: Vec<usize> = vec![];;
-        let mut state = 0;
+        let mut geometry: Vec<Polygon> = vec![];
+        let mut object_ids: Vec<usize> = vec![];
         let mut vertices_count: usize = 0;
-        // todo: state превратить в enum
-        let file =  File::open(&path).unwrap();
-        let reader = BufReader::new(file);
-        for l in reader.lines() {
+        for l in BufReader::new(File::open(&path).unwrap()).lines() {
             let line = l.unwrap().trim().to_string();
             if line.contains("Number of parts") {
-                state = 0;
+                state = LoadState::PartsReading;
                 continue
             }
             if line.contains("Number of triangles") {
-                state = 3;
+                state = LoadState::TrianglesReading;
                 continue
             }
-            if state == 3 {
+            if state == LoadState::TrianglesReading {
                 let num_of_triangles: Vec<usize> = line
                     .split(" ")
                     .map(|it| it.parse::<usize>().unwrap())
@@ -50,35 +55,34 @@ impl Scene<'_> {
             }
             if line.contains("define breps brs_") {
                 object_ids.push(line.split("_").last().unwrap().parse::<usize>().unwrap());
-                state = 1;
+                state = LoadState::IdReading;
                 continue
             }
             if line.contains("Number of vertices") {
-                state = 2;
+                state = LoadState::VerticesReading;
                 vertices_count = vertices.len();
-                continue;
+                continue
             }
-            if state == 2 {
-                let coords: Vec<f32> = line
-                    .split(" ")
-                    .filter(|&it| !it.eq(""))
-                    .map(|it| it.parse::<f32>().unwrap())
-                    .collect();
+            if state == LoadState::VerticesReading {
                 vertices.push(
-                    Vec3 {
-                        x: coords[0],
-                        y: coords[1],
-                        z: coords[2]
-                    }
+                    Vec3::from(
+                        line
+                            .split(" ")
+                            .filter(|&it| !it.eq(""))
+                            .map(|it| it.parse::<f32>().unwrap())
+                            .collect::<Vec<f32>>()
+                    )
                 )
             }
         };
         Scene { path, light, geometry }
     }
 
-    fn scene_intersect(ray: &Ray, polygons: &Vec<Polygon>, hit: Vec3, N: Vec3, material: &Material) -> (bool, Vec3) {
+    fn scene_intersect<'s>(ray: &'s Ray, polygons: &'s Vec<Polygon<'s>>) -> (bool, &'s Material, Vec3, Vec3) {
         let mut t: f32 = 0.0;
         let mut n_hit = Vec3 { ..Default::default() };
+        let mut n_n = Vec3 { ..Default::default() };
+        let mut n_m = &MATERIAL_LIBRARY[0];
         let mut triangle_dist = f32::MAX;
         for p in polygons {
             let (intersect, res) = p.intersected(ray, t);
@@ -86,16 +90,25 @@ impl Scene<'_> {
             if intersect && t < triangle_dist {
                 triangle_dist = t;
                 n_hit = ray.origin + ray.direction * t;
-                //N = p.normal_by_observer(ray.origin - n_hit);
-
+                n_n = p.normal_by_observer(ray.origin - n_hit);
+                n_m = &p.material;
             }
         }
-        todo!()
+        return (triangle_dist < f32::MAX, n_m, n_hit, n_n)
     }
 
-    fn cast_ray(ray: &Ray, polygons: &Vec<Polygon>, depth: i32) -> Ray {
-        todo!()
+    fn cast_ray(ray: Ray, polygons: Vec<Polygon>, depth: i32) -> Ray {
+        if depth > 5 {
+            Ray {
+                origin: Vec3::from((0.0, 0.0, 0.0)),
+                direction: Vec3::from((0.0, 0.0, 0.0)),
+                bright_coefs: HashMap::new(),
+                radiance: HashMap::new(),
+            }
+        } else { ray }
     }
+
+    fn create_ray_from_camera() {}
 
     pub fn render(&self, width: u16, height: u16) {
         todo!()

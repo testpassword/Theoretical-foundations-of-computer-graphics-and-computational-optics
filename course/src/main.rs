@@ -41,18 +41,15 @@ struct Args {
 }
 
 fn main() {
+    // todo: camera class
     // todo: конструировать сцены из объекта shp_loader с интерфейсов loader
     // todo: перейти на двойную точность
     let args = Args::parse();
     let total_intensity = 200.0;
-    let s = Scene::load(
+    Scene::new(
         args.scene,
         Light {
-            position: Vec3 {
-                x: args.lx,
-                y: args.ly,
-                z: args.lz
-            },
+            position: Vec3::from((args.lx, args.ly, args.lz)),
             intensity: total_intensity,
             color_distribution: HashMap::from([
                 (400, 0.0 / 2100.0),
@@ -61,5 +58,5 @@ fn main() {
                 (700, 920.0 / 2100.0)
             ]),
         }
-    );
+    ).render(args.width, args.height);
 }

@@ -7,3 +7,15 @@ pub struct Light {
     pub intensity: f32,
     pub color_distribution: HashMap<i32, f32> // wavelengths (nm), density
 }
+/*
+impl Clone for Light {
+    fn clone(&self) -> Self {
+        let mut cd = HashMap::new();
+        cd.clone_from(&self.color_distribution);
+        Light {
+            position: self.position.clone(),
+            intensity: self.intensity.clone(),
+            color_distribution: cd
+        }
+    }
+}*/

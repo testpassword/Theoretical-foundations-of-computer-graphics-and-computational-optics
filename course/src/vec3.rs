@@ -113,3 +113,14 @@ impl From<(f32, f32, f32)> for Vec3 {
         }
     }
 }
+
+impl From<Vec<f32>> for Vec3 {
+    fn from(v: Vec<f32>) -> Self {
+        let get_safe = |i| -> f32 { v.get(i).unwrap_or(&0.0).clone() };
+        Vec3 {
+            x: get_safe(0),
+            y: get_safe(1),
+            z: get_safe(2)
+        }
+    }
+}
