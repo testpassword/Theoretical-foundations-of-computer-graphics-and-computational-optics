@@ -5,17 +5,26 @@ mod polygon;
 mod scene;
 mod ray;
 
-use std::collections::HashMap;
-use std::process;
-use std::fs::File;
-use std::io::{ self, prelude::*, BufRead, BufReader };
 use clap::{ Error, Parser };
-use crate::light::Light;
-use crate::material::{ Material, MATERIAL_LIBRARY };
-use crate::polygon::Polygon;
-use crate::ray::Ray;
-use crate::vec3::Vec3;
-use crate::scene::Scene;
+use std::{
+    process,
+    collections::HashMap,
+    fs::File,
+    io::{
+        self,
+        prelude::*,
+        BufRead,
+        BufReader
+    }
+};
+use crate::{
+    light::Light,
+    polygon::Polygon,
+    ray::Ray,
+    vec3::Vec3,
+    scene::Scene,
+    material::{ Material, MATERIAL_LIBRARY }
+};
 
 /// Simple ray tracer working with Lumicept: https://integra.jp
 #[derive(Parser)]

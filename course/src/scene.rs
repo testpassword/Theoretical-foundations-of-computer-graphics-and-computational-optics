@@ -5,11 +5,13 @@ use std::{
     collections::HashMap,
     io::{ BufRead, BufReader, Write },
 };
-use crate::light::Light;
-use crate::material::{ Material, MATERIAL_LIBRARY };
-use crate::polygon::Polygon;
-use crate::ray::Ray;
-use crate::vec3::Vec3;
+use crate::{
+    vec3::Vec3,
+    ray::Ray,
+    polygon::Polygon,
+    light::Light,
+    material::{ Material, MATERIAL_LIBRARY }
+};
 
 pub struct Scene<'s> {
     pub path: &'s String,

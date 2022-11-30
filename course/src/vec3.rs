@@ -1,5 +1,6 @@
 use std::ops;
 
+// also can be used as vertex
 #[derive(Copy, Clone, Debug)]
 pub struct Vec3 {
     pub x: f32,

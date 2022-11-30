@@ -3,19 +3,7 @@ use crate::vec3::Vec3;
 
 #[derive(Debug)]
 pub struct Light {
-    pub position: Vec3, // it is static coords, but we can use Vec3 as a vertex
+    pub position: Vec3,
     pub intensity: f32,
     pub color_distribution: HashMap<i32, f32> // wavelengths (nm), density
 }
-/*
-impl Clone for Light {
-    fn clone(&self) -> Self {
-        let mut cd = HashMap::new();
-        cd.clone_from(&self.color_distribution);
-        Light {
-            position: self.position.clone(),
-            intensity: self.intensity.clone(),
-            color_distribution: cd
-        }
-    }
-}*/
