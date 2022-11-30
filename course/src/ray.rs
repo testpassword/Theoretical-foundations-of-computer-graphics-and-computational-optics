@@ -11,12 +11,12 @@ pub struct Ray {
 }
 
 impl Ray {
-    pub fn fill_wavelength(&mut self, ls: Light) {
+    pub fn fill_wavelength(&mut self, ls: &Light) {
         self.bright_coefs.clear();
         self.radiance.clear();
-        for wavelength in ls.color_distribution.into_keys() {
-            self.bright_coefs.insert(wavelength, 1.0);
-            self.radiance.insert(wavelength, 0.0);
+        for (wavelength, _) in &ls.color_distribution {
+            self.bright_coefs.insert(wavelength.clone(), 1.0);
+            self.radiance.insert(wavelength.clone(), 0.0);
         }
         // todo: не забыть, что в hashmap не опеределён порядок
     }

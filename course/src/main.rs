@@ -25,10 +25,10 @@ struct Args {
     scene: String,
     /// Width of rendered image
     #[arg(short = 'W', long = "width", default_value_t = 1280)]
-    width: u16,
+    width: usize,
     /// Height of rendered image
     #[arg(short = 'H', long = "height", default_value_t = 720)]
-    height: u16,
+    height: usize,
     /// X of light position
     #[arg(default_value_t = 0.0)]
     lx: f32,
@@ -37,7 +37,16 @@ struct Args {
     ly: f32,
     /// Z of light position
     #[arg(default_value_t = 0.0)]
-    lz: f32
+    lz: f32,
+    /// X of camera position
+    #[arg(default_value_t = 0.0)]
+    cx: f32,
+    /// Y of camera position
+    #[arg(default_value_t = 0.0)]
+    cy: f32,
+    /// Z of camera position
+    #[arg(default_value_t = 0.0)]
+    cz: f32
 }
 
 fn main() {
@@ -47,8 +56,8 @@ fn main() {
     let args = Args::parse();
     let total_intensity = 200.0;
     Scene::new(
-        args.scene,
-        Light {
+        &args.scene,
+        &Light {
             position: Vec3::from((args.lx, args.ly, args.lz)),
             intensity: total_intensity,
             color_distribution: HashMap::from([
@@ -58,5 +67,5 @@ fn main() {
                 (700, 920.0 / 2100.0)
             ]),
         }
-    ).render(args.width, args.height);
+    ).render(args.width, args.height, Vec3::from((args.cx, args.cy, args.cz)));
 }
