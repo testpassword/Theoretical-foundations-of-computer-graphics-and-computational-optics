@@ -75,7 +75,11 @@ impl Vec3 {
 
     pub fn normalize(self) -> Vec3 {
         let l = self.len();
-        self / l
+        Vec3 {
+            x: self.x / l,
+            y: self.y / l,
+            z: self.z / l
+        }
     }
 
     pub fn dot(self, v: Vec3) -> f32 {

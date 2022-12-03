@@ -5,7 +5,7 @@ mod polygon;
 mod scene;
 mod ray;
 
-use clap::{ Error, Parser };
+use clap::Parser;
 use std::{
     process,
     collections::HashMap,
@@ -62,6 +62,8 @@ fn main() {
     // todo: camera class
     // todo: конструировать сцены из объекта shp_loader с интерфейсов loader
     // todo: перейти на двойную точность
+    // todo: распараллеливание
+    // todo: норм тени
     let args = Args::parse();
     let total_intensity = 200.0;
     Scene::new(
@@ -70,10 +72,10 @@ fn main() {
             position: Vec3::from((args.lx, args.ly, args.lz)),
             intensity: total_intensity,
             color_distribution: HashMap::from([
-                (400, 0.0 / 2100.0),
-                (500, 400.0 / 2100.0),
-                (600, 780.0 / 2100.0),
-                (700, 920.0 / 2100.0)
+                (400, total_intensity * (0.0 / 2100.0)),
+                (500, total_intensity * (400.0 / 2100.0)),
+                (600, total_intensity * (780.0 / 2100.0)),
+                (700, total_intensity * (920.0 / 2100.0))
             ]),
         }
     ).render(args.width, args.height, Vec3::from((args.cx, args.cy, args.cz)));

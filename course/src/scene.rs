@@ -1,10 +1,10 @@
 use std::{
-    cmp::max,
+    process,
     fs::File,
-    fmt::format,
     collections::HashMap,
     io::{ BufRead, BufReader, Write },
 };
+use std::fs::DirBuilder;
 use crate::{
     vec3::Vec3,
     ray::Ray,
@@ -53,7 +53,7 @@ impl<'s> Scene<'_> {
                 geometry.push(
                     Polygon {
                         vertices: (get_vertex(0), get_vertex(1), get_vertex(2)),
-                        material: &MATERIAL_LIBRARY[0],
+                        material: &MATERIAL_LIBRARY[object_ids.last().unwrap().clone()],
                     }
                 );
                 continue
@@ -90,7 +90,7 @@ impl<'s> Scene<'_> {
         let mut n_m = &MATERIAL_LIBRARY[0];
         let mut triangle_dist = f32::MAX;
         for p in &self.geometry {
-            let (intersect, res) = p.intersected(ray, t);
+            let (intersect, res) = p.intersected(ray, t); // res не совпадает
             t = res;
             if intersect && t < triangle_dist {
                 triangle_dist = t;
@@ -102,61 +102,59 @@ impl<'s> Scene<'_> {
         return (triangle_dist < f32::MAX, n_m, n_hit, n_n)
     }
 
+
     fn cast_ray(&self, mut ray: Ray, depth: i32) -> Ray {
         let (intersect, material, hit, N) = self.scene_intersect(&ray);
         if depth > 5 || !intersect {
-            ray
-        } else {
-            for (wl, kd) in &material.diffuse_reflection {
-                *ray.bright_coefs.get_mut(wl).unwrap() *= kd;
-            }
-            let camera_dir = (ray.origin - hit).normalize();
-            let reflect_dir = ray.direction.normalize().reflect(N.normalize()).normalize();
-            let reflect_origin = hit + N * 1e-3;
-            let mut reflect_ray = Ray {
-                origin: reflect_origin,
-                direction: reflect_dir,
-                bright_coefs: Default::default(),
-                radiance: Default::default(),
-            };
-            reflect_ray.fill_wavelength(self.light);
-            if material.specular_reflection > 0.0 && reflect_dir.dot(N) > 0.0 {
-                reflect_ray = self.cast_ray(reflect_ray, depth + 1);
-            }
-            let mut is_spec_material = false;
-            let mut diffuse = 0.0;
-            let specular = 0.0;
-            let light_dir = (self.light.position - hit).normalize();
-            let minus_light_dir = (hit - self.light.position).normalize();
-            let dist = (self.light.position - hit).len();
-            let cos_theta = light_dir.dot(N);
-            let mut include_Kd = if cos_theta <= 0.0 { false } else { true };
-            let mut brdf_Kd = 0.0;
-            let mut brdf_Ks = 0.0;
-            let shadow_origin = hit + N * 1e-3;
-            let shadow_ray = Ray {
-                origin: shadow_origin,
-                direction: light_dir,
-                bright_coefs: Default::default(),
-                radiance: Default::default(),
-            };
-            let (shadow_intersect, shadow_material, shadow_hit, shadow_N) = self.scene_intersect(&shadow_ray);
-            if shadow_intersect && (shadow_hit - shadow_origin).len() < dist {
-                include_Kd = false;
-            }
-            for (l1, l2) in ray.radiance.iter_mut() {
-                let E = (self.light.color_distribution[l1] * cos_theta) / (dist.powi(2));
-                if include_Kd {
-                    brdf_Kd = ray.bright_coefs[l1];
-                }
-                brdf_Ks = 0.0_f32.max(minus_light_dir.reflect(N).dot(camera_dir)).powf(material.transparency) * material.specular_reflection;
-                let brdf = brdf_Kd * brdf_Ks;
-                *l2 = ((E * brdf) / std::f32::consts::PI) + (reflect_ray.radiance[l1]) * material.specular_reflection;
-            }
-            ray
+            return ray;
         }
+        for (wl, kd) in &material.diffuse_reflection {
+            *ray.bright_coefs.get_mut(wl).unwrap() *= kd;
+        }
+        let camera_dir = (ray.origin - hit).normalize();
+        let reflect_dir = ray.direction.normalize().reflect(N.normalize()).normalize();
+        let reflect_origin = hit + N * 1e-3;
+        let mut reflect_ray = Ray {
+            origin: reflect_origin,
+            direction: reflect_dir,
+            bright_coefs: Default::default(),
+            radiance: Default::default(),
+        };
+        reflect_ray.fill_wavelength(self.light);
+        if material.specular_reflection > 0.0 && reflect_dir.dot(N) > 0.0 {
+            reflect_ray = self.cast_ray(reflect_ray, depth + 1);
+        }
+        let light_dir = (self.light.position - hit).normalize();
+        let minus_light_dir = (hit - self.light.position).normalize();
+        let dist = (self.light.position - hit).len();
+        let cos_theta = light_dir.dot(N);
+        let mut include_Kd = if cos_theta <= 0.0 { false } else { true };
+        let mut brdf_Kd = 0.0;
+        let mut brdf_Ks = 0.0;
+        let shadow_origin = hit + N * 1e-3;
+        let shadow_ray = Ray {
+            origin: shadow_origin,
+            direction: light_dir,
+            bright_coefs: Default::default(),
+            radiance: Default::default(),
+        };
+        let (shadow_intersect, shadow_material, shadow_hit, shadow_N) = self.scene_intersect(&shadow_ray);
+        if shadow_intersect && (shadow_hit - shadow_origin).len() < dist {
+            include_Kd = false;
+        }
+        for (l1, l2) in ray.radiance.iter_mut() {
+            let E = (self.light.color_distribution[l1] * cos_theta) / (dist.powi(2));
+            if include_Kd {
+                brdf_Kd = ray.bright_coefs[l1];
+            }
+            brdf_Ks = 0.0_f32.max(minus_light_dir.reflect(N).dot(camera_dir)).powf(material.transparency) * material.specular_reflection;
+            let brdf = brdf_Kd + brdf_Ks;
+            *l2 = ((E * brdf) / std::f32::consts::PI) + (reflect_ray.radiance[l1]) * material.specular_reflection;;
+        }
+        return ray;
     }
 
+    // todo: it is just a constrtor wrapper
     fn create_ray_from_camera(&self, x: f32, y: f32, camera_coords: Vec3) -> Ray {
         let direction = Vec3::from((x, y, -1.0)).normalize();
         let mut ray = Ray {
@@ -174,22 +172,20 @@ impl<'s> Scene<'_> {
         let h = height as f32;
         let fov = std::f32::consts::PI / 3.0;
         let mut framebuffer: Vec<Ray> = Vec::with_capacity(width * height);
-        let mut bright_buffer: Vec<HashMap<i32, f32>> = Vec::with_capacity(width* height);
-        unsafe {
-            framebuffer.set_len(width * height);
-            bright_buffer.set_len(width * height);
-        }
+        let mut bright_buffer: Vec<HashMap<i32, f32>> = Vec::with_capacity(width * height);
         let mut wavelengths = vec![400, 500, 600, 700];
         for i in 0..height {
             for j in 0..width {
                 let x_center = -(2.0 * (j as f32 + 0.5) / w - 1.0) * (fov / 2.0).tan() * w / h;
                 let y_center = -(2.0 * (i as f32 + 0.5) / h - 1.0) * (fov / 2.0).tan();
                 let ray_center = self.create_ray_from_camera(x_center, y_center, camera_position);
-                framebuffer[j + i * width] = self.cast_ray(ray_center, 0);
-                bright_buffer[j + i * width] = framebuffer[j + i * width].radiance.clone();
+                framebuffer.push(self.cast_ray(ray_center, 0));
+                bright_buffer.push(framebuffer[j + i * width].radiance.clone());
             }
         }
-        let mut results = File::create(self.path.split("/").last().unwrap().split(".").next().unwrap().to_string() + ".txt").unwrap();
+        // todo: rename file
+        let mut results = File::create("results.txt").unwrap();
+        //let mut results = File::create(self.path.split("/").last().unwrap().split(".").next().unwrap().to_string() + ".txt").unwrap();
         for wl in &wavelengths {
             results.write_all(format!("wavelength {}\n", wl).as_bytes());
             for i in 0..height {
@@ -203,6 +199,7 @@ impl<'s> Scene<'_> {
                 }
                 results.write_all("\n".as_bytes());
             }
+            results.write_all("\n".as_bytes());
         }
     }
 }

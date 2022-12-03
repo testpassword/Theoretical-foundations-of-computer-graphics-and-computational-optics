@@ -20,6 +20,5 @@ impl Ray {
             self.bright_coefs.insert(wavelength.clone(), 1.0);
             self.radiance.insert(wavelength.clone(), 0.0);
         }
-        // todo: не забыть, что в hashmap не опеределён порядок
     }
 }
