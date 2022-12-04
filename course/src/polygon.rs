@@ -11,7 +11,7 @@ pub struct Polygon<'s> {
 }
 
 impl Polygon<'_> {
-    const ACCURACY: f32 = 1e-8;
+    const ACCURACY: f64 = 1e-8;
 
     pub fn normal(&self) -> Vec3 {
         (self.vertices.1 - self.vertices.0).cross(self.vertices.2 - self.vertices.0).normalize()
@@ -27,7 +27,7 @@ impl Polygon<'_> {
     }
 
     // Moller-Trumbore algorithm
-    pub fn intersected(&self, ray: &Ray, t: f32) -> (bool, f32) {
+    pub fn intersected(&self, ray: &Ray, t: f64) -> (bool, f64) {
         let e1 = self.vertices.1 - self.vertices.0;
         let e2 = self.vertices.2 - self.vertices.0;
         let pvec = ray.direction.cross(e2);

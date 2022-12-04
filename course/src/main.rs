@@ -6,24 +6,11 @@ mod scene;
 mod ray;
 
 use clap::Parser;
-use std::{
-    process,
-    collections::HashMap,
-    fs::File,
-    io::{
-        self,
-        prelude::*,
-        BufRead,
-        BufReader
-    }
-};
+use std::collections::HashMap;
 use crate::{
     light::Light,
-    polygon::Polygon,
-    ray::Ray,
     vec3::Vec3,
-    scene::Scene,
-    material::{ Material, MATERIAL_LIBRARY }
+    scene::Scene
 };
 
 /// Simple ray tracer working with Lumicept: https://integra.jp
@@ -40,22 +27,22 @@ struct Args {
     height: usize,
     /// X of light position
     #[arg(default_value_t = 0.0)]
-    lx: f32,
+    lx: f64,
     /// Y of light position
     #[arg(default_value_t = 0.0)]
-    ly: f32,
+    ly: f64,
     /// Z of light position
     #[arg(default_value_t = 0.0)]
-    lz: f32,
+    lz: f64,
     /// X of camera position
     #[arg(default_value_t = 0.0)]
-    cx: f32,
+    cx: f64,
     /// Y of camera position
     #[arg(default_value_t = 0.0)]
-    cy: f32,
+    cy: f64,
     /// Z of camera position
     #[arg(default_value_t = 0.0)]
-    cz: f32
+    cz: f64
 }
 
 fn main() {
