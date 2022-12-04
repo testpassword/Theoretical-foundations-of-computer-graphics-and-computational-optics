@@ -34,7 +34,7 @@ impl Polygon<'_> {
         let det = e1.dot(pvec);
         if det < Polygon::ACCURACY && det > -Polygon::ACCURACY { return (false, t); }
         let inv_det = 1.0 / det;
-        let tvec = ray.origin - self.vertices.0;
+        let tvec = ray.position - self.vertices.0;
         let u = tvec.dot(pvec) * inv_det;
         if u < 0.0 || u > 1.0 { return (false, t); }
         let qvec = tvec.cross(e1);

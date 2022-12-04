@@ -5,10 +5,14 @@ mod polygon;
 mod scene;
 mod ray;
 mod geom_loaders;
+mod camera;
+mod extended_math;
 
 use clap::Parser;
+use rayon::prelude::*;
 use std::collections::HashMap;
 use crate::{
+    camera::Camera,
     light::Light,
     vec3::Vec3,
     scene::Scene
@@ -38,10 +42,7 @@ struct Args {
 }
 
 fn main() {
-    // todo: camera class (fov и базовые лучи)
-    // todo: распараллеливание
     // todo: норм тени
-    // todo: перезапускаемые render
     let args = Args::parse();
     let total_intensity = 200.0;
     //let mut results = File::create(self.path.split("/").last().unwrap().split(".").next().unwrap().to_string() + ".txt").unwrap();
@@ -56,10 +57,10 @@ fn main() {
                 (600, total_intensity * (780.0 / 2100.0)),
                 (700, total_intensity * (920.0 / 2100.0))
             ]),
+        },
+        &Camera {
+            fov: std::f64::consts::PI / 3.0,
+            position: Vec3::from((args.cx, args.cy, args.cz))
         }
-    ).render(
-        args.width,
-        args.height,
-        Vec3::from((args.cx, args.cy, args.cz))
-    ).save("results.txt");
+    ).render(args.width, args.height).save("results.txt");
 }
