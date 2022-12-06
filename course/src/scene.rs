@@ -102,7 +102,7 @@ impl<'s> Scene<'_> {
         }
     }
 
-    pub fn save(&self, path: &str) {
+    pub fn save(&self, path: String) {
         let mut results = File::create(path).unwrap();
         for wl in &vec![400, 500, 600, 700] {
             write!(results, "wavelength {}\n", wl);
@@ -127,8 +127,8 @@ impl<'s> Scene<'_> {
                 .map(|(x, y)|
                     self.cast_ray(
                         self.camera.create_ray_from_camera(
-                            -(2.0 * (*y as f64 + 0.5) / w - 1.0) * (self.camera.fov / 2.0).tan() * w / h,
-                            -(2.0 * (*x as f64 + 0.5) / h - 1.0) * (self.camera.fov / 2.0).tan(),
+                            -(2.0 * (y.clone() as f64 + 0.5) / w - 1.0) * (self.camera.fov / 2.0).tan() * w / h,
+                            -(2.0 * (x.clone() as f64 + 0.5) / h - 1.0) * (self.camera.fov / 2.0).tan(),
                             self.light
                         ),
                         0

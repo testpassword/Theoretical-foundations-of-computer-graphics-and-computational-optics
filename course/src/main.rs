@@ -27,6 +27,10 @@ struct Args {
     #[arg(short = 'W', long = "width", default_value_t = 1280)] width: usize,
     /// Height of rendered image
     #[arg(short = 'H', long = "height", default_value_t = 720)] height: usize,
+    /// Light intensity
+    #[arg(short = 'I', long = "intensity", default_value_t = 200.0)] intensity: f64,
+    /// Output file path
+    #[arg(short = 'R', long = "render_path", default_value_t = String::from(""))] render_path: String,
     /// X of light position
     #[arg(default_value_t = 0.0)] lx: f64,
     /// Y of light position
@@ -44,8 +48,7 @@ struct Args {
 fn main() {
     // todo: норм тени
     let args = Args::parse();
-    let total_intensity = 200.0;
-    //let mut results = File::create(self.path.split("/").last().unwrap().split(".").next().unwrap().to_string() + ".txt").unwrap();
+    let total_intensity = args.intensity;
     Scene::new(
         &args.scene,
         &Light {
@@ -62,5 +65,12 @@ fn main() {
             fov: std::f64::consts::PI / 3.0,
             position: Vec3::from((args.cx, args.cy, args.cz))
         }
-    ).render(args.width, args.height).save("results.txt");
+    ).render(
+        args.width,
+        args.height
+    ).save(
+        if args.render_path.is_empty() {
+            args.scene.split("/").last().unwrap().split(".").next().unwrap().to_string() + ".txt"
+        } else { args.render_path }
+    );
 }

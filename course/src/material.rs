@@ -9,6 +9,10 @@ pub struct Material {
     pub diffuse_reflection: HashMap<i64, f64> // wavelength (nm), Kd
 }
 
+// todo: metal, mirror, glass
+// todo: 450, 550, 650
+// todo: get most near kd from diffuse_reflection
+
 lazy_static! {
     pub static ref MATERIAL_LIBRARY: [Material; 5] = [
         ([0.343, 0.747, 0.740, 0.737], 0.0, 20.0),
