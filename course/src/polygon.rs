@@ -1,6 +1,6 @@
 use crate::{
     vec3::Vec3,
-    ray::Ray,
+    lights::ray::Ray,
     material::Material
 };
 

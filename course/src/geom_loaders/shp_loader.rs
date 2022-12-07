@@ -5,7 +5,7 @@ use std::{
 use crate::{
     vec3::Vec3,
     polygon::Polygon,
-    material::MATERIAL_LIBRARY,
+    material::MATERIAL_LIBRARY as ML,
     geom_loaders::{ GeomLoader, LoadState }
 };
 
@@ -29,15 +29,18 @@ impl GeomLoader for SHPLoader {
                 continue
             }
             if state == LoadState::TrianglesReading {
-                let num_of_triangles: Vec<usize> = line
-                    .split(" ")
-                    .map(|it| it.parse::<usize>().unwrap())
-                    .collect();
-                let get_vertex = |i| -> Vec3 { vertices[vertices_count + num_of_triangles[i]] };
+                let get_vertex = |i| -> Vec3 {
+                    let triangles: Vec<usize> = line
+                        .split(" ")
+                        .map(|it| it.parse::<usize>().unwrap())
+                        .collect();
+                    vertices[vertices_count + triangles[i]]
+                };
+                // if there is no material with with idx, take first material
                 geometry.push(
                     Polygon {
                         vertices: (get_vertex(0), get_vertex(1), get_vertex(2)),
-                        material: &MATERIAL_LIBRARY[object_ids.last().unwrap().clone()],
+                        material: &ML.get(object_ids.last().unwrap().clone()).unwrap_or(&ML.first().unwrap()),
                     }
                 );
                 continue

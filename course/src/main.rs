@@ -1,21 +1,23 @@
 mod vec3;
-mod light;
 mod material;
 mod polygon;
 mod scene;
-mod ray;
 mod geom_loaders;
 mod camera;
 mod extended_math;
+mod lights;
 
 use clap::Parser;
 use rayon::prelude::*;
 use std::collections::HashMap;
 use crate::{
-    camera::Camera,
-    light::Light,
     vec3::Vec3,
-    scene::Scene
+    scene::Scene,
+    camera::Camera,
+    lights::{
+        point_light::PointLight,
+        ambient_light::AmbientLight
+    },
 };
 
 /// Simple ray tracer working with Lumicept: https://integra.jp
@@ -42,7 +44,9 @@ struct Args {
     /// Y of camera position
     #[arg(default_value_t = 0.0)] cy: f64,
     /// Z of camera position
-    #[arg(default_value_t = 0.0)] cz: f64
+    #[arg(default_value_t = 0.0)] cz: f64,
+    /// FOV of camera
+    #[arg(default_value_t = 1.04)] cf: f64,
 }
 
 fn main() {
@@ -51,7 +55,7 @@ fn main() {
     let total_intensity = args.intensity;
     Scene::new(
         &args.scene,
-        &Light {
+        &PointLight {
             position: Vec3::from((args.lx, args.ly, args.lz)),
             intensity: total_intensity,
             color_distribution: HashMap::from([
@@ -62,15 +66,15 @@ fn main() {
             ]),
         },
         &Camera {
-            fov: std::f64::consts::PI / 3.0,
+            fov: args.cf,
             position: Vec3::from((args.cx, args.cy, args.cz))
         }
     ).render(
         args.width,
         args.height
-    ).save(
+    ).save(&(
         if args.render_path.is_empty() {
             args.scene.split("/").last().unwrap().split(".").next().unwrap().to_string() + ".txt"
         } else { args.render_path }
-    );
+    ));
 }

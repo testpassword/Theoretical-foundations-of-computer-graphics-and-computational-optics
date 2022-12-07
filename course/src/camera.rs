@@ -1,7 +1,9 @@
 use crate::{
-    ray::Ray,
     vec3::Vec3,
-    light::Light
+    lights::{
+        ray::Ray,
+        point_light::PointLight
+    },
 };
 
 pub struct Camera {
@@ -10,7 +12,7 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn create_ray_from_camera(&self, ray_x: f64, ray_y: f64, light: &Light) -> Ray {
+    pub fn create_ray_from_camera(&self, ray_x: f64, ray_y: f64, light: &PointLight) -> Ray {
         Ray::new(
             self.position,
             Vec3::from((ray_x, ray_y, -1.0)).normalize(),

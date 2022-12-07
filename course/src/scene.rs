@@ -5,31 +5,40 @@ use std::{
     collections::HashMap,
 };
 use crate::{
-    ray::Ray,
     vec3::Vec3,
-    light::Light,
     camera::Camera,
     polygon::Polygon,
     extended_math::create_grid,
     geom_loaders::load_geometry,
-    material::{ Material, MATERIAL_LIBRARY }
+    lights::{
+        ray::Ray,
+        point_light::PointLight
+    },
+    material::{
+        Material,
+        MATERIAL_LIBRARY
+    }
 };
 
 pub struct Scene<'s> {
     pub path: String,
-    pub light: &'s Light,
+    pub point_light: &'s PointLight,
     pub geometry: Vec<Polygon<'s>>,
     pub camera: &'s Camera,
-    pub radiance_buffer: Vec<HashMap<i64, f64>>,
     pub width: usize,
-    pub height: usize
+    pub height: usize,
+    radiance_buffer: Vec<HashMap<i64, f64>>,
 }
 
 impl<'s> Scene<'_> {
-    pub fn new(path: &str, light: &'s Light, camera: &'s Camera) -> Scene<'s> {
+    pub fn new(
+        path: &str,
+        point_light: &'s PointLight,
+        camera: &'s Camera
+    ) -> Scene<'s> {
         Scene {
             path: path.to_string(),
-            light,
+            point_light,
             geometry: load_geometry(path),
             camera,
             radiance_buffer: vec![],
@@ -57,6 +66,7 @@ impl<'s> Scene<'_> {
         (triangle_dist < f64::MAX, n_m, n_hit, n_n)
     }
 
+    // todo: antialiasing
 
     fn cast_ray(&self, mut ray: Ray, depth: i64) -> Ray {
         let (intersect, material, hit, N) = self.scene_intersect(&ray);
@@ -68,13 +78,13 @@ impl<'s> Scene<'_> {
             let camera_dir = (ray.position - hit).normalize();
             let reflect_dir = ray.direction.normalize().reflect(N.normalize()).normalize();
             let reflect_origin = hit + N * 1e-3;
-            let mut reflect_ray = Ray::new(reflect_origin, reflect_dir, self.light);
+            let mut reflect_ray = Ray::new(reflect_origin, reflect_dir, self.point_light);
             if material.specular_reflection > 0.0 && reflect_dir.dot(N) > 0.0 {
                 reflect_ray = self.cast_ray(reflect_ray, depth + 1);
             }
-            let light_dir = (self.light.position - hit).normalize();
-            let minus_light_dir = (hit - self.light.position).normalize();
-            let dist = (self.light.position - hit).len();
+            let light_dir = (self.point_light.position - hit).normalize();
+            let minus_light_dir = (hit - self.point_light.position).normalize();
+            let dist = (self.point_light.position - hit).len();
             let cos_theta = light_dir.dot(N);
             let mut include_Kd = if cos_theta <= 0.0 { false } else { true };
             let mut brdf_Kd = 0.0;
@@ -90,11 +100,11 @@ impl<'s> Scene<'_> {
                 include_Kd = false;
             }
             for (l1, l2) in ray.radiance.iter_mut() {
-                let e = (self.light.color_distribution[l1] * cos_theta) / (dist.powi(2));
+                let e = (self.point_light.color_distribution[l1] * cos_theta) / (dist.powi(2));
                 if include_Kd {
                     brdf_Kd = ray.bright_coefs[l1];
                 }
-                brdf_Ks = 0.0_f64.max(minus_light_dir.reflect(N).dot(camera_dir)).powf(material.transparency) * material.specular_reflection;
+                brdf_Ks = 0.0_f64.max(minus_light_dir.reflect(N).dot(camera_dir)) * material.specular_reflection;
                 let brdf = brdf_Kd + brdf_Ks;
                 *l2 = ((e * brdf) / std::f64::consts::PI) + (reflect_ray.radiance[l1]) * material.specular_reflection;
             }
@@ -102,7 +112,7 @@ impl<'s> Scene<'_> {
         }
     }
 
-    pub fn save(&self, path: String) {
+    pub fn save(&self, path: &str) {
         let mut results = File::create(path).unwrap();
         for wl in &vec![400, 500, 600, 700] {
             write!(results, "wavelength {}\n", wl);
@@ -129,7 +139,7 @@ impl<'s> Scene<'_> {
                         self.camera.create_ray_from_camera(
                             -(2.0 * (y.clone() as f64 + 0.5) / w - 1.0) * (self.camera.fov / 2.0).tan() * w / h,
                             -(2.0 * (x.clone() as f64 + 0.5) / h - 1.0) * (self.camera.fov / 2.0).tan(),
-                            self.light
+                            self.point_light
                         ),
                         0
                     ).radiance
