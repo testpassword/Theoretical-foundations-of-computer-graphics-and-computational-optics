@@ -4,12 +4,16 @@ use std::{
     io::{ Write },
     collections::HashMap,
 };
+use image::{ImageBuffer, Rgb, RgbImage};
 use crate::{
     vec3::Vec3,
     camera::Camera,
     polygon::Polygon,
-    extended_math::create_grid,
     geom_loaders::load_geometry,
+    utils::{
+        create_grid,
+        to0_255_color_format
+    },
     lights::{
         ray::Ray,
         point_light::PointLight
@@ -27,7 +31,8 @@ pub struct Scene<'s> {
     pub camera: &'s Camera,
     pub width: usize,
     pub height: usize,
-    radiance_buffer: Vec<HashMap<i64, f64>>,
+    pixel_buffer: Vec<(usize, usize, f64, Vec3)>, // radiance and color
+    // todo: replace color to link to material for saving memory
 }
 
 impl<'s> Scene<'_> {
@@ -41,7 +46,7 @@ impl<'s> Scene<'_> {
             point_light,
             geometry: load_geometry(path),
             camera,
-            radiance_buffer: vec![],
+            pixel_buffer: vec![],
             width: 0,
             height: 0
         }
@@ -67,20 +72,22 @@ impl<'s> Scene<'_> {
     }
 
     // todo: antialiasing
+    // todo: tone mapping
 
-    fn cast_ray(&self, mut ray: Ray, depth: i64) -> Ray {
+    fn cast_ray(&self, mut ray: Ray, depth: i64) -> (Ray, Vec3) {
         let (intersect, material, hit, N) = self.scene_intersect(&ray);
-        if depth > 5 || !intersect { ray }
+        if depth > 5 || !intersect { (ray, material.color) }
         else {
-            for (wl, kd) in &material.diffuse_reflection {
-                *ray.bright_coefs.get_mut(wl).unwrap() *= kd;
-            }
             let camera_dir = (ray.position - hit).normalize();
             let reflect_dir = ray.direction.normalize().reflect(N.normalize()).normalize();
             let reflect_origin = hit + N * 1e-3;
-            let mut reflect_ray = Ray::new(reflect_origin, reflect_dir, self.point_light);
+            let mut reflect_ray = Ray {
+                position: reflect_origin,
+                direction: reflect_dir,
+                ..Default::default()
+            };
             if material.specular_reflection > 0.0 && reflect_dir.dot(N) > 0.0 {
-                reflect_ray = self.cast_ray(reflect_ray, depth + 1);
+                reflect_ray = self.cast_ray(reflect_ray, depth + 1).0;
             }
             let light_dir = (self.point_light.position - hit).normalize();
             let minus_light_dir = (hit - self.point_light.position).normalize();
@@ -99,31 +106,29 @@ impl<'s> Scene<'_> {
             if shadow_intersect && (shadow_hit - shadow_origin).len() < dist {
                 include_Kd = false;
             }
-            for (l1, l2) in ray.radiance.iter_mut() {
-                let e = (self.point_light.color_distribution[l1] * cos_theta) / (dist.powi(2));
-                if include_Kd {
-                    brdf_Kd = ray.bright_coefs[l1];
-                }
-                brdf_Ks = 0.0_f64.max(minus_light_dir.reflect(N).dot(camera_dir)) * material.specular_reflection;
-                let brdf = brdf_Kd + brdf_Ks;
-                *l2 = ((e * brdf) / std::f64::consts::PI) + (reflect_ray.radiance[l1]) * material.specular_reflection;
+            let e = (self.point_light.intensity * cos_theta) / (dist.powi(2));
+            if include_Kd {
+                brdf_Kd = material.diffuse_reflection;
             }
-            ray
+            brdf_Ks = 0.0_f64.max(minus_light_dir.reflect(N).dot(camera_dir)) * material.specular_reflection;
+            let brdf = brdf_Kd + brdf_Ks;
+            ray.radiance = ((e * brdf) / std::f64::consts::PI) + (reflect_ray.radiance) * material.specular_reflection;
+            (ray, material.color)
         }
     }
 
     pub fn save(&self, path: &str) {
-        let mut results = File::create(path).unwrap();
-        for wl in &vec![400, 500, 600, 700] {
-            write!(results, "wavelength {}\n", wl);
-            for i in 0..self.height {
-                for j in 0..self.width {
-                    write!(results, "{}", (if j == 0 { "" } else { " " }).to_string() + &(self.radiance_buffer[j + i * self.width].get(wl).unwrap() / 100.0).to_string());
-                }
-                write!(results, "\n");
-            }
-            write!(results, "\n");
-        }
+        let mut img = RgbImage::new(self.width as u32 + 1, self.height as u32 + 1);
+        self.pixel_buffer
+            .iter()
+            .for_each(|&(y, x, rad, color)| {
+                let normalized_rad = if rad > 1.0 { 1.0 } else { rad };
+                let normalized__color = color * normalized_rad;
+                let final_color = to0_255_color_format(normalized__color);
+                println!("{};{}; orig_rad = {}; normal_rad = {}; = {:?}", x, y, rad, normalized_rad, final_color);
+                *img.get_pixel_mut(x as u32, y as u32) = Rgb(to0_255_color_format(normalized__color));
+            });
+        img.save(path).unwrap();
     }
 
     pub fn render(&mut self, width: usize, height: usize) -> &mut Self {
@@ -131,19 +136,21 @@ impl<'s> Scene<'_> {
         self.height = height;
         let w = width as f64;
         let h = height as f64;
-        self.radiance_buffer =
+        self.pixel_buffer =
             create_grid(self.height, self.width)
                 .par_iter()
-                .map(|(x, y)|
-                    self.cast_ray(
+                .map(|&(x, y)| {
+                    let (ray, color) = self.cast_ray(
                         self.camera.create_ray_from_camera(
-                            -(2.0 * (y.clone() as f64 + 0.5) / w - 1.0) * (self.camera.fov / 2.0).tan() * w / h,
-                            -(2.0 * (x.clone() as f64 + 0.5) / h - 1.0) * (self.camera.fov / 2.0).tan(),
+                            -(2.0 * (y as f64 + 0.5) / w - 1.0) * (self.camera.fov / 2.0).tan() * w / h,
+                            -(2.0 * (x as f64 + 0.5) / h - 1.0) * (self.camera.fov / 2.0).tan(),
                             self.point_light
                         ),
                         0
-                    ).radiance
-                ).collect();
+                    );
+                    (x, y, ray.radiance, color)
+                })
+                .collect();
         self
     }
 }

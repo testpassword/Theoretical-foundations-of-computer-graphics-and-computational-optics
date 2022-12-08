@@ -4,7 +4,7 @@ mod polygon;
 mod scene;
 mod geom_loaders;
 mod camera;
-mod extended_math;
+mod utils;
 mod lights;
 
 use clap::Parser;
@@ -30,7 +30,7 @@ struct Args {
     /// Height of rendered image
     #[arg(short = 'H', long = "height", default_value_t = 720)] height: usize,
     /// Light intensity
-    #[arg(short = 'I', long = "intensity", default_value_t = 200.0)] intensity: f64,
+    #[arg(short = 'I', long = "intensity", default_value_t = 999999.0)] intensity: f64,
     /// Output file path
     #[arg(short = 'R', long = "render_path", default_value_t = String::from(""))] render_path: String,
     /// X of light position
@@ -49,6 +49,7 @@ struct Args {
     #[arg(default_value_t = 1.04)] cf: f64,
 }
 
+// x: 340; y: 320
 fn main() {
     // todo: норм тени
     let args = Args::parse();
@@ -57,13 +58,7 @@ fn main() {
         &args.scene,
         &PointLight {
             position: Vec3::from((args.lx, args.ly, args.lz)),
-            intensity: total_intensity,
-            color_distribution: HashMap::from([
-                (400, total_intensity * (0.0 / 2100.0)),
-                (500, total_intensity * (400.0 / 2100.0)),
-                (600, total_intensity * (780.0 / 2100.0)),
-                (700, total_intensity * (920.0 / 2100.0))
-            ]),
+            intensity: total_intensity
         },
         &Camera {
             fov: args.cf,
@@ -74,7 +69,7 @@ fn main() {
         args.height
     ).save(&(
         if args.render_path.is_empty() {
-            args.scene.split("/").last().unwrap().split(".").next().unwrap().to_string() + ".txt"
+            args.scene.split("/").last().unwrap().split(".").next().unwrap().to_string() + ".png"
         } else { args.render_path }
     ));
 }

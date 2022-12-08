@@ -13,10 +13,10 @@ pub struct Camera {
 
 impl Camera {
     pub fn create_ray_from_camera(&self, ray_x: f64, ray_y: f64, light: &PointLight) -> Ray {
-        Ray::new(
-            self.position,
-            Vec3::from((ray_x, ray_y, -1.0)).normalize(),
-            light
-        )
+        Ray {
+            position: self.position,
+            direction: Vec3::from((ray_x, ray_y, -1.0)).normalize(),
+            ..Default::default()
+        }
     }
 }
