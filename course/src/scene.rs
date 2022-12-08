@@ -32,7 +32,6 @@ pub struct Scene<'s> {
     pub width: usize,
     pub height: usize,
     pixel_buffer: Vec<(usize, usize, f64, Vec3)>, // radiance and color
-    // todo: replace color to link to material for saving memory
 }
 
 impl<'s> Scene<'_> {
@@ -71,9 +70,6 @@ impl<'s> Scene<'_> {
         (triangle_dist < f64::MAX, n_m, n_hit, n_n)
     }
 
-    // todo: antialiasing
-    // todo: tone mapping
-
     fn cast_ray(&self, mut ray: Ray, depth: i64) -> (Ray, Vec3) {
         let (intersect, material, hit, N) = self.scene_intersect(&ray);
         if depth > 5 || !intersect { (ray, material.color) }
@@ -86,7 +82,7 @@ impl<'s> Scene<'_> {
                 direction: reflect_dir,
                 ..Default::default()
             };
-            if material.specular_reflection > 0.0 && reflect_dir.dot(N) > 0.0 {
+            if material.reflectiveness > 0.0 && reflect_dir.dot(N) > 0.0 {
                 reflect_ray = self.cast_ray(reflect_ray, depth + 1).0;
             }
             let light_dir = (self.point_light.position - hit).normalize();
@@ -122,11 +118,11 @@ impl<'s> Scene<'_> {
         self.pixel_buffer
             .iter()
             .for_each(|&(y, x, rad, color)| {
-                let normalized_rad = if rad > 1.0 { 1.0 } else { rad };
-                let normalized__color = color * normalized_rad;
-                let final_color = to0_255_color_format(normalized__color);
-                println!("{};{}; orig_rad = {}; normal_rad = {}; = {:?}", x, y, rad, normalized_rad, final_color);
-                *img.get_pixel_mut(x as u32, y as u32) = Rgb(to0_255_color_format(normalized__color));
+                *img.get_pixel_mut(x as u32, y as u32) = Rgb(
+                    to0_255_color_format(
+                        color * (if rad > 1.0 { 1.0 } else { rad })
+                    )
+                )
             });
         img.save(path).unwrap();
     }

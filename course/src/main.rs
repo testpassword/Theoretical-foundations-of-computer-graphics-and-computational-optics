@@ -30,7 +30,7 @@ struct Args {
     /// Height of rendered image
     #[arg(short = 'H', long = "height", default_value_t = 720)] height: usize,
     /// Light intensity
-    #[arg(short = 'I', long = "intensity", default_value_t = 999999.0)] intensity: f64,
+    #[arg(short = 'I', long = "intensity", default_value_t = 1100009.0)] intensity: f64,
     /// Output file path
     #[arg(short = 'R', long = "render_path", default_value_t = String::from(""))] render_path: String,
     /// X of light position
@@ -51,7 +51,14 @@ struct Args {
 
 // x: 340; y: 320
 fn main() {
-    // todo: норм тени
+    // todo: normal shadow based on different lighting
+    // todo: colored reflect ray
+    // todo: light shouldn't have brightness color of material
+    // todo: extend material library
+    // todo: antialiasing
+    // todo: tone mapping
+    // todo: draw through OpenGL
+    // todo: new scene
     let args = Args::parse();
     let total_intensity = args.intensity;
     Scene::new(
