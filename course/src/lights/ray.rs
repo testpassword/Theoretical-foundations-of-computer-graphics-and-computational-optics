@@ -1,8 +1,4 @@
-use std::collections::HashMap;
-use crate::{
-    vec3::Vec3,
-    lights::point_light::PointLight,
-};
+use crate::vec3::Vec3;
 
 #[derive(Debug)]
 pub struct Ray {

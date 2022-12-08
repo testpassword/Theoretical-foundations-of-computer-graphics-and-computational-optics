@@ -1,5 +1,3 @@
-#[macro_use]
-use std::collections::HashMap;
 use lazy_static::lazy_static;
 use crate::vec3::Vec3;
 

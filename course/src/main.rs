@@ -8,16 +8,11 @@ mod utils;
 mod lights;
 
 use clap::Parser;
-use rayon::prelude::*;
-use std::collections::HashMap;
 use crate::{
     vec3::Vec3,
     scene::Scene,
     camera::Camera,
-    lights::{
-        point_light::PointLight,
-        ambient_light::AmbientLight
-    },
+    lights::point_light::PointLight,
 };
 
 /// Simple ray tracer working with Lumicept: https://integra.jp
@@ -26,9 +21,9 @@ struct Args {
     /// Path to scene file
     #[arg(short = 'S', long = "scene_path")] scene: String,
     /// Width of rendered image
-    #[arg(short = 'W', long = "width", default_value_t = 1280)] width: usize,
+    #[arg(short = 'W', long = "width", default_value_t = 1280)] width: u32,
     /// Height of rendered image
-    #[arg(short = 'H', long = "height", default_value_t = 720)] height: usize,
+    #[arg(short = 'H', long = "height", default_value_t = 720)] height: u32,
     /// Light intensity
     #[arg(short = 'I', long = "intensity", default_value_t = 1100009.0)] intensity: f64,
     /// Output file path
