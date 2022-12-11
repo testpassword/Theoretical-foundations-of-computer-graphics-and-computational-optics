@@ -1,3 +1,4 @@
+use std::ops::Mul;
 use rayon::prelude::*;
 use image::{
     Rgb,
@@ -29,7 +30,7 @@ pub struct Scene<'s> {
     pub camera: &'s Camera,
     pub width: u32,
     pub height: u32,
-    pixel_buffer: Vec<(u32, u32, f64, Vec3)>, // radiance and color
+    pixel_buffer: Vec<(u32, u32, Ray)>, // radiance and color
 }
 
 impl<'s> Scene<'_> {
@@ -68,9 +69,10 @@ impl<'s> Scene<'_> {
         (triangle_dist < f64::MAX, n_m, n_hit, n_n)
     }
 
-    fn cast_ray(&self, mut ray: Ray, depth: i64) -> (Ray, Vec3) {
+    fn cast_ray(&self, mut ray: Ray, depth: i64) -> Ray {
         let (intersect, material, hit, N) = self.scene_intersect(&ray);
-        if depth > 5 || !intersect { (ray, material.color) }
+        ray.color = material.color;
+        if depth > 5 || !intersect { ray }
         else {
             let camera_dir = (ray.position - hit).normalize();
             let reflect_dir = ray.direction.normalize().reflect(N.normalize()).normalize();
@@ -81,7 +83,7 @@ impl<'s> Scene<'_> {
                 ..Default::default()
             };
             if material.reflectiveness > 0.0 && reflect_dir.dot(N) > 0.0 {
-                reflect_ray = self.cast_ray(reflect_ray, depth + 1).0;
+                reflect_ray = self.cast_ray(reflect_ray, depth + 1);
             }
             let light_dir = (self.point_light.position - hit).normalize();
             let minus_light_dir = (hit - self.point_light.position).normalize();
@@ -102,7 +104,7 @@ impl<'s> Scene<'_> {
             let brdf_Ks = 0.0_f64.max(minus_light_dir.reflect(N).dot(camera_dir)) * material.specular_reflection;
             let brdf = (if include_Kd { material.diffuse_reflection } else { 0.0 }) + brdf_Ks;
             ray.radiance = ((e * brdf) / std::f64::consts::PI) + (reflect_ray.radiance) * material.specular_reflection;
-            (ray, material.color)
+            ray
         }
     }
 
@@ -110,10 +112,10 @@ impl<'s> Scene<'_> {
         let mut img = RgbImage::new(self.width, self.height);
         self.pixel_buffer
             .iter()
-            .for_each(|&(y, x, rad, color)| {
-                *img.get_pixel_mut(x, y) = Rgb(
+            .for_each(|(y, x, ray)| {
+                *img.get_pixel_mut(x.clone(), y.clone()) = Rgb(
                     to0_255_color_format(
-                        color * (if rad > 1.0 { 1.0 } else { rad })
+                        ray.color * (if ray.radiance > 1.0 { 1.0 } else { ray.radiance })
                     )
                 )
             });
@@ -128,16 +130,15 @@ impl<'s> Scene<'_> {
         self.pixel_buffer =
             create_grid(self.height, self.width)
                 .par_iter()
-                .map(|&(x, y)| {
-                    let (ray, color) = self.cast_ray(
+                .map(|&(x, y)| (
+                    x, y, self.cast_ray(
                         self.camera.create_ray_from_camera(
                             -(2.0 * (y as f64 + 0.5) / w - 1.0) * (self.camera.fov / 2.0).tan() * w / h,
                             -(2.0 * (x as f64 + 0.5) / h - 1.0) * (self.camera.fov / 2.0).tan(),
                         ),
                         0
-                    );
-                    (x, y, ray.radiance, color)
-                })
+                    )
+                ))
                 .collect();
         self
     }
