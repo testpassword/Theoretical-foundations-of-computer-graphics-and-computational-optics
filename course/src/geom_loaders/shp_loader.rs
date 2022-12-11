@@ -1,12 +1,18 @@
 use std::{
     fs::File,
-    io::{ BufRead, BufReader }
+    io::{
+        BufRead,
+        BufReader
+    }
 };
 use crate::{
     vec3::Vec3,
     polygon::Polygon,
     material::MATERIAL_LIBRARY as ML,
-    geom_loaders::{ GeomLoader, LoadState }
+    geom_loaders::{
+        GeomLoader,
+        LoadState
+    }
 };
 
 pub struct SHPLoader;

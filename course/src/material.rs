@@ -10,6 +10,14 @@ pub struct Material {
     pub color: Vec3
 }
 
+impl Material {
+    pub fn brdf(&self, light_dir: Vec3, camera_dir: Vec3, include_kd: bool) -> f64 {
+        let brdf_ks = 0.0_f64.max(light_dir.dot(camera_dir)) * self.specular_reflection;
+        let brdf_kd = if include_kd { self.diffuse_reflection } else { 0.0 };
+        brdf_kd + brdf_ks
+    }
+}
+
 lazy_static! {
     pub static ref MATERIAL_LIBRARY: [Material; 5] = [
         ("yellow", 0.2, 0.2, 0.0, (1.0, 0.886, 0.749)),

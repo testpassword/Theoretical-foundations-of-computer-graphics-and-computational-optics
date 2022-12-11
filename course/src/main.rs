@@ -15,7 +15,6 @@ use crate::{
     lights::point_light::PointLight,
 };
 
-/// Simple ray tracer working with Lumicept: https://integra.jp
 #[derive(Parser)]
 struct Args {
     /// Path to scene file
@@ -26,6 +25,10 @@ struct Args {
     #[arg(short = 'H', long = "height", default_value_t = 720)] height: u32,
     /// Light intensity
     #[arg(short = 'I', long = "intensity", default_value_t = 1100009.0)] intensity: f64,
+
+    /// antialiased
+    #[arg(short = 'A', long = "antialiased", default_value_t = true)] antialiased: bool,
+
     /// Output file path
     #[arg(short = 'R', long = "render_path", default_value_t = String::from(""))] render_path: String,
     /// X of light position
@@ -41,23 +44,21 @@ struct Args {
     /// Z of camera position
     #[arg(default_value_t = 0.0)] cz: f64,
     /// FOV of camera
-    #[arg(default_value_t = 1.04)] cf: f64,
+    #[arg(default_value_t = 1.04)] cf: f64
 }
 
 fn main() {
-    // todo: normal shadow based on different lighting
-    // todo: extend material library
+    // todo: normal shadow based on different lights
     // todo: antialiasing
     // todo: tone mapping
     // todo: draw through OpenGL
     // todo: new scene
     let args = Args::parse();
-    let total_intensity = args.intensity;
     Scene::new(
         &args.scene,
         &PointLight {
             position: Vec3::from((args.lx, args.ly, args.lz)),
-            intensity: total_intensity
+            intensity: args.intensity
         },
         &Camera {
             fov: args.cf,
@@ -65,7 +66,9 @@ fn main() {
         }
     ).render(
         args.width,
-        args.height
+        args.height,
+        false
+        //args.antialiased
     ).save(&(
         if args.render_path.is_empty() {
             args.scene.split("/").last().unwrap().split(".").next().unwrap().to_string() + ".png"
