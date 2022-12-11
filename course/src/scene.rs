@@ -104,6 +104,7 @@ impl<'s> Scene<'_> {
             let brdf_Ks = 0.0_f64.max(minus_light_dir.reflect(N).dot(camera_dir)) * material.specular_reflection;
             let brdf = (if include_Kd { material.diffuse_reflection } else { 0.0 }) + brdf_Ks;
             ray.radiance = ((e * brdf) / std::f64::consts::PI) + (reflect_ray.radiance) * material.specular_reflection;
+            ray.color = (ray.color * (1.0 - material.reflectiveness)) + (reflect_ray.color * material.reflectiveness);
             ray
         }
     }

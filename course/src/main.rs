@@ -44,11 +44,8 @@ struct Args {
     #[arg(default_value_t = 1.04)] cf: f64,
 }
 
-// x: 340; y: 320
 fn main() {
     // todo: normal shadow based on different lighting
-    // todo: colored reflect ray
-    // todo: light shouldn't have brightness color of material
     // todo: extend material library
     // todo: antialiasing
     // todo: tone mapping
