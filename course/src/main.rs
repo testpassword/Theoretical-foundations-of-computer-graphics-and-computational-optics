@@ -24,7 +24,7 @@ struct Args {
     /// Height of rendered image
     #[arg(short = 'H', long = "height", default_value_t = 720)] height: u32,
     /// Light intensity
-    #[arg(short = 'I', long = "intensity", default_value_t = 1100009.0)] intensity: f64,
+    #[arg(short = 'I', long = "intensity", default_value_t = 1400009.0)] intensity: f64,
 
     /// antialiased
     #[arg(short = 'A', long = "antialiased", default_value_t = true)] antialiased: bool,

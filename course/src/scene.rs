@@ -71,6 +71,8 @@ impl<'s> Scene<'_> {
         (triangle_dist < f64::MAX, n_m, n_hit, n_n)
     }
 
+    // todo: одно отражение остаётся
+    // блики не белые
     fn cast_ray(&self, mut ray: Ray, depth: i64) -> Ray {
         let (intersect, material, hit, N) = self.scene_intersect(&ray);
         ray.color = material.color;
