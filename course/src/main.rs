@@ -24,11 +24,9 @@ struct Args {
     /// Height of rendered image
     #[arg(short = 'H', long = "height", default_value_t = 720)] height: u32,
     /// Light intensity
-    #[arg(short = 'I', long = "intensity", default_value_t = 1400009.0)] intensity: f64,
-
+    #[arg(short = 'I', long = "intensity", default_value_t = 1500000.0)] intensity: f64,
     /// antialiased
-    #[arg(short = 'A', long = "antialiased", default_value_t = true)] antialiased: bool,
-
+    #[arg(short = 'A', long = "antialiased", default_value_t = false)] antialiased: bool,
     /// Output file path
     #[arg(short = 'R', long = "render_path", default_value_t = String::from(""))] render_path: String,
     /// X of light position
@@ -43,8 +41,8 @@ struct Args {
     #[arg(default_value_t = 0.0)] cy: f64,
     /// Z of camera position
     #[arg(default_value_t = 0.0)] cz: f64,
-    /// FOV of camera
-    #[arg(default_value_t = 1.04)] cf: f64
+    /// FOV of camera in radiance
+    #[arg(default_value_t = 1.0)] cf: f64
 }
 
 fn main() {
@@ -52,7 +50,9 @@ fn main() {
     // todo: antialiasing
     // todo: tone mapping
     // todo: draw through OpenGL
-    // todo: new scene
+    // todo: fov in degrees
+    // todo: одно отражение остаётся
+    // todo: блики не белые
     let args = Args::parse();
     Scene::new(
         &args.scene,
@@ -67,8 +67,7 @@ fn main() {
     ).render(
         args.width,
         args.height,
-        false
-        //args.antialiased
+        args.antialiased
     ).save(&(
         if args.render_path.is_empty() {
             args.scene.split("/").last().unwrap().split(".").next().unwrap().to_string() + ".png"

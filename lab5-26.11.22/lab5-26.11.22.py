@@ -61,7 +61,7 @@ def perform_calculations(lens_diam: float, scene, obs_nodes, run_pt: bool = True
     if run_imaps:
         imaps = scene.IMapsParams()
         imaps.req_acc = 0.01
-        imaps.time_limit = 7200 #  2 hours
+        imaps.time_limit = 60 * 60 * 4
         imaps.SetObserverAsAccSource(obs_nodes[0])  # function take one observer node as param, but all observer nodes from scene will be taken for calculations
         kernel.CalculateIMaps()
 
@@ -182,9 +182,9 @@ class RealLens:
             lens_wrapper.AddNode(asp)
         p_obs = [
             self.build_plane_observer_node(*params) for params in [
-                ((-210, -210, 285), 420.1038, 300),
-                ((-175, -175, 235), 350.1038, 375),
-                ((-140, -140, 185), 280.0830, 600),
+                ((-210, -210, 314.4548), 420.1038, 300),
+                ((-175, -175, 264.4548), 350.1038, 375),
+                ((-140, -140, 214.4548), 280.0830, 600),
             ]
         ]
         for obs in p_obs:
@@ -248,12 +248,12 @@ def calc_for_real_leas(lens_diam: float, run_pt: bool = True, run_imaps: bool = 
         cam.image_dist = image_dist
         cam.object_dist = focusing_dist
         cam.focal_length = FOCAL_LENGTH
-        real_lens_300_transform = XYZTransform()
-        real_lens_300_transform.pos = (0, 0, 0)
-        real_lens_300_transform.x_rot_ang = -90
-        real_lens_300_transform.y_rot_ang = 0
-        real_lens_300_transform.z_rot_ang = -90
-        cam.tr = real_lens_300_transform
+        rlt = XYZTransform()
+        rlt.pos = (0, 0, 0)
+        rlt.x_rot_ang = -90
+        rlt.y_rot_ang = 0
+        rlt.z_rot_ang = -90
+        cam.tr = rlt
         cam.name = "real_{}".format(focusing_dist)
         return cam
     

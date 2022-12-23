@@ -33,6 +33,7 @@ pub struct Scene<'s> {
 }
 
 const AA_STRENGTH: usize = 2;
+const REFLECTION_DEPTH: usize = 5;
 
 impl<'s> Scene<'_> {
 
@@ -71,16 +72,13 @@ impl<'s> Scene<'_> {
         (triangle_dist < f64::MAX, n_m, n_hit, n_n)
     }
 
-    // todo: одно отражение остаётся
-    // блики не белые
     fn cast_ray(&self, mut ray: Ray, depth: i64) -> Ray {
         let (intersect, material, hit, N) = self.scene_intersect(&ray);
         ray.color = material.color;
-        if depth > 5 || !intersect { ray }
+        if depth > REFLECTION_DEPTH as i64 || !intersect { ray }
         else {
-            let camera_dir = (ray.position - hit).normalize();
             let reflect_dir = ray.direction.normalize().reflect(N.normalize()).normalize();
-            let reflect_origin = hit + N * 1e-3;
+            let reflect_origin = hit + N * 1e-8;
             let mut reflect_ray = Ray {
                 position: reflect_origin,
                 direction: reflect_dir,
@@ -102,7 +100,11 @@ impl<'s> Scene<'_> {
             let (shadow_intersect, _shadow_material, shadow_hit, _shadow_N) = self.scene_intersect(&shadow_ray);
             let include_kd = if cos_theta <= 0.0 || (shadow_intersect && (shadow_hit - shadow_origin).len() < dist) { false } else { true };
             let e = (self.point_light.intensity * cos_theta) / (dist.powi(2));
-            let brdf = material.brdf(minus_light_dir.reflect(N), camera_dir, include_kd);
+            let brdf = material.brdf(
+                minus_light_dir.reflect(N),
+                (ray.position - hit).normalize(),
+                include_kd
+            );
             ray.radiance = ((e * brdf) / std::f64::consts::PI) + reflect_ray.radiance * material.specular_reflection;
             ray.color = ray.color * (1.0 - material.reflectiveness) + reflect_ray.color * material.reflectiveness;
             ray

@@ -10,17 +10,3 @@ pub fn to0_255_color_format(color: Vec3) -> [u8; 3] {
     let convert = |c: f64| 255.min((c * 255.0).round() as u8);
     [convert(color.x), convert(color.y), convert(color.z)]
 }
-
-
-/*pub fn transpose_matrix(data: Vec<usize>, n: usize, m: usize) -> Vec<usize> {
-    let transposed = vec![];
-    for i in 0..m {
-        for j in 0..n {
-            let index1 = i * n + j;
-            let index2 = j * m + i;
-
-        }
-    }
-    transposed
-}
-*/
