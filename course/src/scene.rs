@@ -1,5 +1,6 @@
 use rayon::prelude::*;
 use image::{
+    ImageBuffer,
     Rgb,
     RgbImage
 };
@@ -32,8 +33,8 @@ pub struct Scene<'s> {
     pixel_buffer: Vec<(u32, u32, f64, Vec3)>
 }
 
-const AA_STRENGTH: usize = 2;
-const REFLECTION_DEPTH: usize = 5;
+const AA_STRENGTH: f64 = 2.0;
+const MAX_REFLECTIONS_DEPTH: i64 = 5;
 
 impl<'s> Scene<'_> {
 
@@ -49,33 +50,33 @@ impl<'s> Scene<'_> {
             camera,
             pixel_buffer: vec![],
             width: 0,
-            height: 0
+            height: 0,
         }
     }
 
     fn scene_intersect(&self, ray: &Ray) -> (bool, &Material, Vec3, Vec3) {
-        let mut t: f64 = 0.0;
-        let mut n_hit = Vec3 { ..Default::default() };
-        let mut n_n = Vec3 { ..Default::default() };
-        let mut n_m = &ML[0]; // just use first material as default
-        let mut triangle_dist = f64::MAX;
+        let mut t = 0.0;
+        let mut hit = Vec3 { ..Default::default() };
+        let mut normal = Vec3 { ..Default::default() };
+        let mut material = &ML[0]; // use first material as default
+        let mut triangle_dist = self.camera.far;
         for p in &self.geometry {
             let (intersect, res) = p.intersected(ray, t);
             t = res;
             if intersect && t < triangle_dist {
                 triangle_dist = t;
-                n_hit = ray.position + ray.direction * t;
-                n_n = p.normal_by_observer(ray.position - n_hit);
-                n_m = &p.material;
+                hit = ray.position + ray.direction * t;
+                normal = p.normal_by_observer(ray.position - hit);
+                material = &p.material;
             }
         }
-        (triangle_dist < f64::MAX, n_m, n_hit, n_n)
+        (triangle_dist < f64::MAX, material, hit, normal)
     }
 
-    fn cast_ray(&self, mut ray: Ray, depth: i64) -> Ray {
+    fn cast_ray(&self, mut ray: Ray, depth: i64, reflections_on: bool) -> Ray {
         let (intersect, material, hit, N) = self.scene_intersect(&ray);
         ray.color = material.color;
-        if depth > REFLECTION_DEPTH as i64 || !intersect { ray }
+        if depth > MAX_REFLECTIONS_DEPTH || !intersect { ray }
         else {
             let reflect_dir = ray.direction.normalize().reflect(N.normalize()).normalize();
             let reflect_origin = hit + N * 1e-8;
@@ -84,12 +85,11 @@ impl<'s> Scene<'_> {
                 direction: reflect_dir,
                 ..Default::default()
             };
-            if material.reflectiveness > 0.0 && reflect_dir.dot(N) > 0.0 {
-                reflect_ray = self.cast_ray(reflect_ray, depth + 1);
+            if material.specular_reflection > 0.0 && reflect_dir.dot(N) > 0.0 && reflections_on {
+                reflect_ray = self.cast_ray(reflect_ray, depth + 1, true);
             }
             let light_dir = (self.point_light.position - hit).normalize();
-            let minus_light_dir = (hit - self.point_light.position).normalize();
-            let dist = (self.point_light.position - hit).len();
+            let distance = (self.point_light.position - hit).len();
             let cos_theta = light_dir.dot(N);
             let shadow_origin = hit + N * 1e-3;
             let shadow_ray = Ray {
@@ -97,16 +97,15 @@ impl<'s> Scene<'_> {
                 direction: light_dir,
                 ..Default::default()
             };
-            let (shadow_intersect, _shadow_material, shadow_hit, _shadow_N) = self.scene_intersect(&shadow_ray);
-            let include_kd = if cos_theta <= 0.0 || (shadow_intersect && (shadow_hit - shadow_origin).len() < dist) { false } else { true };
-            let e = (self.point_light.intensity * cos_theta) / (dist.powi(2));
+            let (shadow_intersect, _, shadow_hit, _) = self.scene_intersect(&shadow_ray);
+            let illumination = (self.point_light.intensity * cos_theta) / (distance.powi(2));
             let brdf = material.brdf(
-                minus_light_dir.reflect(N),
-                (ray.position - hit).normalize(),
-                include_kd
+                (hit - self.point_light.position).normalize().reflect(N), // reverse light dir
+                (ray.position - hit).normalize(), // camera dir
+                if cos_theta <= 0.0 || (shadow_intersect && (shadow_hit - shadow_origin).len() < distance) { false } else { true } // include Kd
             );
-            ray.radiance = ((e * brdf) / std::f64::consts::PI) + reflect_ray.radiance * material.specular_reflection;
-            ray.color = ray.color * (1.0 - material.reflectiveness) + reflect_ray.color * material.reflectiveness;
+            ray.radiance = ((illumination * brdf) / std::f64::consts::PI) + reflect_ray.radiance * material.specular_reflection;
+            ray.color = ray.color * (1.0 - material.specular_reflection) + reflect_ray.color * material.specular_reflection;
             ray
         }
     }
@@ -123,35 +122,40 @@ impl<'s> Scene<'_> {
          */
     }
 
-    pub fn save(&self, path: &str) {
+    pub fn save(&self, path: &str) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
         let mut img = RgbImage::new(self.width, self.height);
-        self.pixel_buffer
-            .iter()
-            .for_each(|&(y, x, radiance, color)| {
-                *img.get_pixel_mut(x.clone(), y.clone()) = Rgb(
+        self.pixel_buffer.iter().for_each(|&(y, x, radiance, color)| {
+            *img.get_pixel_mut(x, y) = Rgb(
                     to0_255_color_format(
                         color * (if radiance >= 1.0 { 1.0 } else { radiance })
                     )
                 )
             });
-        img.save(path);
+        img.save(path).expect("unexpectedly, unable to save image");
+        img
     }
 
-    pub fn render(&mut self, width: u32, height: u32, antialiased: bool) -> &mut Self {
-        let mapped_res = |res| res as f64 * if antialiased { AA_STRENGTH as f64 } else { 1.0 };
+    pub fn render(&mut self, width: u32, height: u32, antialiased: bool, reflections_on: bool) -> &mut Self {
+        let mapped_res = |res|
+            res as f64 * (if antialiased { AA_STRENGTH } else { 1.0 });
+        let projection_center = |side: u32, side_size: f64|
+            -(2.0 * (side as f64 + 0.5) / side_size - 1.0) * (self.camera.fov.to_radians() / 2.0).tan();
         self.width = width;
         self.height = height;
         let w_f64 = mapped_res(width);
         let h_f64 = mapped_res(height);
         self.pixel_buffer =
-            create_grid(h_f64 as u32, w_f64 as u32)
+            create_grid(width, height)
                 .par_iter()
                 .map(|&(x, y)| {
                     let ray = self.cast_ray(
                         self.camera.create_ray_from_camera(
-                            -(2.0 * (y as f64 + 0.5) / w_f64 - 1.0) * (self.camera.fov / 2.0).tan() * w_f64 / h_f64,
-                            -(2.0 * (x as f64 + 0.5) / h_f64 - 1.0) * (self.camera.fov / 2.0).tan(),
-                        ), 0);
+                            projection_center(y, w_f64) * w_f64 / h_f64,
+                            projection_center(x, h_f64),
+                        ),
+                        0,
+                        reflections_on
+                    );
                     (x, y, ray.radiance, ray.color)
                 })
                 .collect();

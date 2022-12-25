@@ -7,6 +7,7 @@ mod camera;
 mod utils;
 mod lights;
 
+use std::path::PathBuf;
 use clap::Parser;
 use crate::{
     vec3::Vec3,
@@ -42,18 +43,25 @@ struct Args {
     /// Z of camera position
     #[arg(default_value_t = 0.0)] cz: f64,
     /// FOV of camera in radiance
-    #[arg(default_value_t = 1.0)] cf: f64
+    #[arg(default_value_t = 55.0)] cf: f64
 }
 
+/*
+ROADMAP
+todo: normal shadows based on different lights
+todo: antialiasing
+todo: tone mapping
+todo: make glares white
+*/
 fn main() {
-    // todo: normal shadow based on different lights
-    // todo: antialiasing
-    // todo: tone mapping
-    // todo: draw through OpenGL
-    // todo: fov in degrees
-    // todo: одно отражение остаётся
-    // todo: блики не белые
     let args = Args::parse();
+    let build_img_name = || {
+        if args.render_path.is_empty() {
+            let mut path = PathBuf::from(&args.scene);
+            path.set_extension("png");
+            return path.to_str().unwrap().to_string();
+        } else { args.render_path }
+    };
     Scene::new(
         &args.scene,
         &PointLight {
@@ -62,15 +70,13 @@ fn main() {
         },
         &Camera {
             fov: args.cf,
-            position: Vec3::from((args.cx, args.cy, args.cz))
+            position: Vec3::from((args.cx, args.cy, args.cz)),
+            far: f64::MAX,
         }
     ).render(
         args.width,
         args.height,
-        args.antialiased
-    ).save(&(
-        if args.render_path.is_empty() {
-            args.scene.split("/").last().unwrap().split(".").next().unwrap().to_string() + ".png"
-        } else { args.render_path }
-    ));
+        args.antialiased,
+        true
+    ).save(&build_img_name());
 }

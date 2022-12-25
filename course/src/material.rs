@@ -6,7 +6,6 @@ pub struct Material {
     pub name: String,
     pub specular_reflection: f64,
     pub diffuse_reflection: f64,
-    pub reflectiveness: f64,
     pub color: Vec3
 }
 
@@ -20,17 +19,16 @@ impl Material {
 
 lazy_static! {
     pub static ref MATERIAL_LIBRARY: [Material; 5] = [
-        ("black", 0.2, 0.2, 0.55, (1.0, 1.0, 1.0)),
-        ("white", 0.1, 0.1, 0.55, (0.0, 0.0, 0.0)),
-        ("white", 0.1, 0.65, 0.55, (0.0, 0.0, 0.0)),
-        ("blue", 0.9, 0.2, 0.55, (0.0 / 255.0, 125.0 / 255.0, 195.0 / 255.0)),
-        ("white", 0.3, 0.34, 0.55, (0.0, 0.0, 0.0)),
-    ].map(|(name, specular_reflection, diffuse_reflection, reflectiveness, color)|
+        ("black", 0.4, 0.2, (1.0, 1.0, 1.0)),
+        ("white", 0.4, 0.1, (0.0, 0.0, 0.0)),
+        ("white", 0.4, 0.65, (0.0, 0.0, 0.0)),
+        ("blue", 0.4, 0.2, (0.0 / 255.0, 125.0 / 255.0, 195.0 / 255.0)),
+        ("white", 0.4, 0.34, (0.0, 0.0, 0.0)),
+    ].map(|(name, specular_reflection, diffuse_reflection, color)|
         Material {
             name: name.to_string(),
             specular_reflection,
             diffuse_reflection,
-            reflectiveness,
             color: Vec3::from(color)
         }
     );

@@ -6,6 +6,7 @@ use crate::{
 pub struct Camera {
     pub fov: f64,
     pub position: Vec3,
+    pub far: f64
 }
 
 impl Camera {
