@@ -25,7 +25,7 @@ struct Args {
     /// Height of rendered image
     #[arg(short = 'H', long = "height", default_value_t = 720)] height: u32,
     /// Light intensity
-    #[arg(short = 'I', long = "intensity", default_value_t = 1500000.0)] intensity: f64,
+    #[arg(short = 'I', long = "intensity", default_value_t = 1000000.0)] intensity: f64,
     /// antialiased
     #[arg(short = 'A', long = "antialiased", default_value_t = false)] antialiased: bool,
     /// Output file path
@@ -52,6 +52,10 @@ todo: normal shadows based on different lights
 todo: antialiasing
 todo: tone mapping
 todo: make glares white
+todo: fix radiance
+todo: make light colorful
+todo: transmission summarize of Ray
+todo: grouping polygons to surface or a object
 */
 fn main() {
     let args = Args::parse();

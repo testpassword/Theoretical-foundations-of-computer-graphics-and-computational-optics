@@ -1,8 +1,14 @@
-use rayon::prelude::*;
-use image::{
-    ImageBuffer,
-    Rgb,
-    RgbImage
+use {
+    rayon::prelude::*,
+    std::time::{
+        Duration,
+        Instant
+    },
+    image::{
+        ImageBuffer,
+        Rgb,
+        RgbImage
+    }
 };
 use crate::{
     vec3::Vec3,
@@ -79,9 +85,8 @@ impl<'s> Scene<'_> {
         if depth > MAX_REFLECTIONS_DEPTH || !intersect { ray }
         else {
             let reflect_dir = ray.direction.normalize().reflect(N.normalize()).normalize();
-            let reflect_origin = hit + N * 1e-8;
             let mut reflect_ray = Ray {
-                position: reflect_origin,
+                position: hit + N * 1e-8, // reflect_origin
                 direction: reflect_dir,
                 ..Default::default()
             };
@@ -90,19 +95,20 @@ impl<'s> Scene<'_> {
             }
             let light_dir = (self.point_light.position - hit).normalize();
             let distance = (self.point_light.position - hit).len();
-            let cos_theta = light_dir.dot(N);
-            let shadow_origin = hit + N * 1e-3;
-            let shadow_ray = Ray {
-                position: shadow_origin,
-                direction: light_dir,
-                ..Default::default()
-            };
-            let (shadow_intersect, _, shadow_hit, _) = self.scene_intersect(&shadow_ray);
-            let illumination = (self.point_light.intensity * cos_theta) / (distance.powi(2));
+            let cosθ = light_dir.dot(N) / (light_dir.len() * N.len());
+            let shadow_origin = hit + N * 1e-8;
+            let (shadow_intersect, _, shadow_hit, _) = self.scene_intersect(
+                &Ray { // shadow_ray
+                    position: shadow_origin,
+                    direction: light_dir,
+                    ..Default::default()
+                }
+            );
+            let illumination = (self.point_light.intensity * cosθ) / (distance.powi(2));
             let brdf = material.brdf(
                 (hit - self.point_light.position).normalize().reflect(N), // reverse light dir
                 (ray.position - hit).normalize(), // camera dir
-                if cos_theta <= 0.0 || (shadow_intersect && (shadow_hit - shadow_origin).len() < distance) { false } else { true } // include Kd
+                !(cosθ <= 0.0 || (shadow_intersect && (shadow_hit - shadow_origin).len() < distance)) // include Kd
             );
             ray.radiance = ((illumination * brdf) / std::f64::consts::PI) + reflect_ray.radiance * material.specular_reflection;
             ray.color = ray.color * (1.0 - material.specular_reflection) + reflect_ray.color * material.specular_reflection;
@@ -124,18 +130,18 @@ impl<'s> Scene<'_> {
 
     pub fn save(&self, path: &str) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
         let mut img = RgbImage::new(self.width, self.height);
-        self.pixel_buffer.iter().for_each(|&(y, x, radiance, color)| {
+        self.pixel_buffer.iter().for_each(|&(y, x, radiance, color)|
             *img.get_pixel_mut(x, y) = Rgb(
-                    to0_255_color_format(
-                        color * (if radiance >= 1.0 { 1.0 } else { radiance })
-                    )
+                to0_255_color_format(
+                    color * radiance
                 )
-            });
+            )
+        );
         img.save(path).expect("unexpectedly, unable to save image");
         img
     }
 
-    pub fn render(&mut self, width: u32, height: u32, antialiased: bool, reflections_on: bool) -> &mut Self {
+    pub fn render(&mut self, width: u32, height: u32, antialiased: bool, reflections_on: bool, ) -> &mut Self {
         let mapped_res = |res|
             res as f64 * (if antialiased { AA_STRENGTH } else { 1.0 });
         let projection_center = |side: u32, side_size: f64|
@@ -144,6 +150,7 @@ impl<'s> Scene<'_> {
         self.height = height;
         let w_f64 = mapped_res(width);
         let h_f64 = mapped_res(height);
+        let start = Instant::now();
         self.pixel_buffer =
             create_grid(width, height)
                 .par_iter()
@@ -159,6 +166,7 @@ impl<'s> Scene<'_> {
                     (x, y, ray.radiance, ray.color)
                 })
                 .collect();
+        println!("Render function time taken: {:?}", start.elapsed());
         if antialiased { self.ssaa() };
         self
     }

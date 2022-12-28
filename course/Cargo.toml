@@ -1,7 +1,11 @@
 [package]
 name = "raygine"
-version = "0.9.0"
+version = "1.0.0"
 edition = "2021"
+authors = ["https://github.com/testpassword"]
+description = "Simple reverse ray tracing renderer. Support SHP format for geometry."
+repository = "https://github.com/testpassword/Theoretical-foundations-of-computer-graphics-and-computational-optics/tree/master/course"
+keywords = ["graphics"]
 
 [dependencies]
 clap = { version = "4.0.26", features = ["derive"] }
