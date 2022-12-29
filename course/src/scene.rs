@@ -166,7 +166,7 @@ impl<'s> Scene<'_> {
                     (x, y, ray.radiance, ray.color)
                 })
                 .collect();
-        println!("Render function time taken: {:?}", start.elapsed());
+        println!("render function time taken = {:?}", start.elapsed());
         if antialiased { self.ssaa() };
         self
     }
